@@ -11,9 +11,9 @@ class WMPCipher:
         """
         if words is None:
             # api key
-            # words = [808464434, 808857697, 808988723, 811937893]
+            words = [808464434, 808857697, 808988723, 811937893]
             # login api key
-            words = [811675698, 808726582, 808595509, 808792116]
+            # words = [811675698, 808726582, 808595509, 808792116]
         
         self.key = self._convert_words_to_bytes(words)
         self.mode = AES.MODE_ECB

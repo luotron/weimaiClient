@@ -1,8 +1,8 @@
-from wmp_crypto import WMPCipher
+from WMPCipher import WMPCipher
 import requests
 import json
 
-class WeiMaiClient:
+class WMPClient:
     def __init__(self, token, userid):
         self.api_key = [808464434, 808857697, 808988723, 811937893]
         self.login_api_key = [811675698, 808726582, 808595509, 808792116]
@@ -103,7 +103,7 @@ class WeiMaiClient:
 if __name__ == "__main__":
     TOKEN = '493B0F9A-BD78-4940-B413-B18CD99CAF22'
     USERID = '9212333513008070'
-    client = WeiMaiClient(token=TOKEN, userid=USERID)
+    client = WMPClient(token=TOKEN, userid=USERID)
     result = client.query_group_info(group_id=54876902196)
     if result is None:
         exit(1)
