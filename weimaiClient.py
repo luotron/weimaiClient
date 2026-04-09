@@ -18,6 +18,44 @@ class WeiMaiClient:
             'useragent': 'WeiMai/web',
             'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
         }
+    def query_group_increment(self, group_id, size=5):
+        """
+        查询群增量信息
+        :param group_id: 群组 ID
+        :param size: 查询数量
+        """
+        # 1. 构建原始数据
+        data_obj = {"pageSize": size, "groupid":str(group_id), "endid":0}
+        # 2. AES 加密
+        cipher = WMPCipher(words=self.api_key)
+        encrypted_str = cipher.encrypt(data_obj)
+        # 3. 构造请求体 (application/x-www-form-urlencoded)
+        payload = {'encryptData': encrypted_str}
+        try:
+            # 4. 发送请求
+            response = requests.post(url='https://weimai.edujia.com/wmim/h5/group/encrypt/member/query/increment.do', headers=self.headers, data=payload)
+            response.raise_for_status() # 检查 HTTP 状态码
+            
+            # 5. 解密响应内容
+            # 假设返回的是原始加密字符串，如果是 JSON 结构需先提取对应字段
+            raw_response = response.text
+            try:
+                # 尝试解析为 JSON，提取加密字段
+                resp_json = json.loads(raw_response)
+                if resp_json['code'] == 200:
+                    data = cipher.decrypt(resp_json['data'])
+                    result = data
+                else:
+                    print(f"请求失败，服务器返回: {resp_json}")
+                    return None
+            except json.JSONDecodeError:
+                # 不是 JSON 格式，直接使用文本内容
+                result = raw_response
+            
+            return result
+        except Exception as e:
+            print(f"请求或解密失败: {e}")
+            return None
     
     def query_group_info(self, group_id):
         """
@@ -67,5 +105,11 @@ if __name__ == "__main__":
     USERID = '9212333513008070'
     client = WeiMaiClient(token=TOKEN, userid=USERID)
     result = client.query_group_info(group_id=54876902196)
-    if result is not None:
-        print("查询结果:", result)
+    if result is None:
+        exit(1)
+    print("查询结果:", result)
+    size = result['object']['memberCount']
+    result = client.query_group_increment(group_id=54876902196, size=size)
+    if result is None:
+        exit(1)
+    print("查询结果:", result)
