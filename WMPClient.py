@@ -3,6 +3,7 @@ from WMPMqttClient import WMPMqttClient
 from urllib.parse import unquote
 import requests
 import json
+import qrcode
 
 class WMPClient:
     def __init__(self, token = None, userid=None):
@@ -112,9 +113,26 @@ class WMPClient:
             "operation": "webLogin",
             "code": result['object']['clientId']
         }
-        print(login_info)
+        self.generate_terminal_qr(json.dumps(login_info, separators=(',', ':')))
         wmp_mqtt = WMPMqttClient(**config)
         wmp_mqtt.connect()
+    
+    def generate_terminal_qr(self, text):
+        # 1. 配置二维码参数
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        
+        # 2. 添加数据
+        qr.add_data(text)
+        qr.make(fit=True)
+
+        # 3. 在终端输出二维码
+        # invert=True 通常在深色背景的终端下显示更正常
+        qr.print_ascii(invert=True)
 
 if __name__ == "__main__":
     TOKEN = '493B0F9A-BD78-4940-B413-B18CD99CAF22'
