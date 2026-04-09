@@ -1,9 +1,11 @@
 from WMPCipher import WMPCipher
+from WMPMqttClient import WMPMqttClient
+from urllib.parse import unquote
 import requests
 import json
 
 class WMPClient:
-    def __init__(self, token, userid):
+    def __init__(self, token = None, userid=None):
         self.api_key = [808464434, 808857697, 808988723, 811937893]
         self.login_api_key = [811675698, 808726582, 808595509, 808792116]
         # 初始化固定的 Headers
@@ -14,16 +16,33 @@ class WMPClient:
             'origin': 'https://weimai.edujia.com',
             'referer': 'https://weimai.edujia.com/home',
             'token': token,
-            'userid': str(userid),
+            'userid': str(userid) if userid is not None else None,
             'useragent': 'WeiMai/web',
             'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
         }
+
+    def http_post(self, url, data = None):
+        try:
+            response = requests.post(url=url, headers=self.headers, data=data)
+            response.raise_for_status() # 检查 HTTP 状态码
+            raw_response = response.text
+            resp_json = json.loads(raw_response)
+            if resp_json['code'] == 200:
+                return resp_json
+            else:
+                print(f"请求失败，服务器返回: {resp_json}")
+                return None
+        except Exception as e:
+            print(f"HTTP 请求失败: {e}")
+            return None
+    
     def query_group_increment(self, group_id, size=5):
         """
         查询群增量信息
         :param group_id: 群组 ID
         :param size: 查询数量
         """
+        url = 'https://weimai.edujia.com/wmim/h5/group/encrypt/member/query/increment.do'
         # 1. 构建原始数据
         data_obj = {"pageSize": size, "groupid":str(group_id), "endid":0}
         # 2. AES 加密
@@ -31,37 +50,21 @@ class WMPClient:
         encrypted_str = cipher.encrypt(data_obj)
         # 3. 构造请求体 (application/x-www-form-urlencoded)
         payload = {'encryptData': encrypted_str}
-        try:
-            # 4. 发送请求
-            response = requests.post(url='https://weimai.edujia.com/wmim/h5/group/encrypt/member/query/increment.do', headers=self.headers, data=payload)
-            response.raise_for_status() # 检查 HTTP 状态码
-            
-            # 5. 解密响应内容
-            # 假设返回的是原始加密字符串，如果是 JSON 结构需先提取对应字段
-            raw_response = response.text
+        result = self.http_post(url=url, data=payload)
+        if result is not None:
             try:
-                # 尝试解析为 JSON，提取加密字段
-                resp_json = json.loads(raw_response)
-                if resp_json['code'] == 200:
-                    data = cipher.decrypt(resp_json['data'])
-                    result = data
-                else:
-                    print(f"请求失败，服务器返回: {resp_json}")
-                    return None
-            except json.JSONDecodeError:
-                # 不是 JSON 格式，直接使用文本内容
-                result = raw_response
-            
-            return result
-        except Exception as e:
-            print(f"请求或解密失败: {e}")
-            return None
+                decrypted_data = cipher.decrypt(result['data'])
+                return decrypted_data
+            except Exception as e:
+                print(f"解密失败: {e}")
+                return None
     
     def query_group_info(self, group_id):
         """
         查询群信息
         :param group_id: 群组 ID
         """
+        url = 'https://weimai.edujia.com/wmim/h5/group/encrypt/query/info.do'
         # 1. 构建原始数据
         data_obj = {"groupid": str(group_id)}
         
@@ -72,44 +75,49 @@ class WMPClient:
         # 3. 构造请求体 (application/x-www-form-urlencoded)
         payload = {'encryptData': encrypted_str}
         
-        try:
-            # 4. 发送请求
-            response = requests.post(url='https://weimai.edujia.com/wmim/h5/group/encrypt/query/info.do', headers=self.headers, data=payload)
-            response.raise_for_status() # 检查 HTTP 状态码
-            
-            # 5. 解密响应内容
-            # 假设返回的是原始加密字符串，如果是 JSON 结构需先提取对应字段
-            raw_response = response.text
+        result = self.http_post(url=url, data=payload)
+        if result is not None:
             try:
-                # 尝试解析为 JSON，提取加密字段
-                resp_json = json.loads(raw_response)
-                if resp_json['code'] == 200:
-                    data = cipher.decrypt(resp_json['data'])
-                    result = data
-                else:
-                    print(f"请求失败，服务器返回: {resp_json}")
-                    return None
-            except json.JSONDecodeError:
-                # 不是 JSON 格式，直接使用文本内容
-                result = raw_response
-            
-            return result
-            
-        except Exception as e:
-            print(f"请求或解密失败: {e}")
-            return None
+                decrypted_data = cipher.decrypt(result['data'])
+                return decrypted_data
+            except Exception as e:
+                print(f"解密失败: {e}")
+                return None
+    
+    def query_login_info(self):
+        url = 'https://weimai.edujia.com/wmim/h5/mqtt/encrypt/consumer/query/info.do'
 
+        result = self.http_post(url=url)
+        if result is not None:
+            try:
+                cipher = WMPCipher(words=self.login_api_key)
+                decrypted_data = cipher.decrypt(result['data'])
+                return decrypted_data
+            except Exception as e:
+                print(f"解密失败: {e}")
+                return None
+    
+    def login(self):
+        result = self.query_login_info()
+        if result is None:
+            return None
+        config = {
+            "host": result['object']['host'],
+            "client_id": result['object']['clientId'],
+            "accessKey": result['object']['accessKey'],
+            "password": unquote(result['object']['password']),  # URL 解码密码
+        }
+        login_info = {
+            "app": "weimai",
+            "operation": "webLogin",
+            "code": result['object']['clientId']
+        }
+        print(login_info)
+        wmp_mqtt = WMPMqttClient(**config)
+        wmp_mqtt.connect()
 
 if __name__ == "__main__":
     TOKEN = '493B0F9A-BD78-4940-B413-B18CD99CAF22'
     USERID = '9212333513008070'
-    client = WMPClient(token=TOKEN, userid=USERID)
-    result = client.query_group_info(group_id=54876902196)
-    if result is None:
-        exit(1)
-    print("查询结果:", result)
-    size = result['object']['memberCount']
-    result = client.query_group_increment(group_id=54876902196, size=size)
-    if result is None:
-        exit(1)
-    print("查询结果:", result)
+    client = WMPClient()
+    result = client.login()
