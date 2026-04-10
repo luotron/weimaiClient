@@ -44,13 +44,19 @@ class WMPMqttClient:
         # 3. 鉴权
         self.client.username_pw_set(self.accessKey, self.password)
 
-        # 4. 回调绑定
+        # # 4. 回调绑定
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
         self.client.on_message = self._on_message
         self.client.on_subscribe = self._on_subscribe
         self.client.on_log = self._on_log
 
+    def set_on_message_callback(self, callback):
+        """
+        允许外部设置消息回调函数，覆盖默认的 _on_message。
+        回调函数签名应为: callback(client, userdata, msg)
+        """
+        self.client.on_message = callback
     def _on_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:
             print("✅ MQTT 连接成功！")
@@ -85,6 +91,8 @@ class WMPMqttClient:
             self.client.disconnect()
         except Exception as e:
             print(f"💥 致命错误: {e}")
+    def disconnect(self):
+        self.client.disconnect()
 
 
 if __name__ == "__main__":
