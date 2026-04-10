@@ -10,9 +10,9 @@ class WMPCipher:
         :param words: 列表格式的 CryptoJS WordArray (如 [808464434, ...])
         """
         if words is None:
-            # api key
+            # API Key (bytes): b'0002060a08030e0e'
             words = [808464434, 808857697, 808988723, 811937893]
-            # login api key
+            # Login Key (bytes): b'0a02040602050504'
             # words = [811675698, 808726582, 808595509, 808792116]
         
         self.key = self._convert_words_to_bytes(words)
@@ -69,18 +69,7 @@ class WMPCipher:
 if __name__ == "__main__":
     # 示例用法
     cipher = WMPCipher()
-    api_key = cipher._convert_words_to_bytes([808464434, 808857697, 808988723, 811937893])
-    print(f"API Key (bytes): {api_key}")
-
-    login_key = cipher._convert_words_to_bytes([811675698, 808726582, 808595509, 808792116])
-    print(f"Login Key (bytes): {login_key}")
-    
-    # # 加密示例
-    # data = {"groupid": "48557446083"}
-    # encrypted = cipher.encrypt(data)
-    # print(f"Encrypted: {encrypted}")
-    
-    # res = 'gsQFrXaeXOFy0/wWtICsYvaGSsRP96TTUpPJSNiin/caQzjXeH2FuMawixR5XsgVBljr/Vg/hZNAvAOmicfv4P4RMVdszNwd53n8Bwc0Pgg4Y0bJwOYgMspD3jse1bdgR/nkQgmpS2rSWYsymR3qVQDBSwb4uLQXNwHH1hBM5+v9OHURM+DexlOsOG2W7219mGy246GD9O/lrHadhUHmKwvyJdVQeHcoD2NGkzt3S34e39IzSNZFX+vof/xWMtpGarshOSP2TlPM4ErZr5204LgYBFtghrDvGCa3fbHE3VEo3sHpZMbWPtKiQJcvHEVWFSEWoUzEQgKSS3nRrbsvyg=='
-    # # 解密示例
-    # decrypted = cipher.decrypt(res)
-    # print(f"Decrypted: {decrypted}")
+    res = '5H6XoowZc5kVDggIF7Ar6v1kIhCWAvQUL+LBVl4jzoCH1tYUoxl1MqK+/XWAdrV0Ya39NjruIy3+zWdNqlz8NZgwgtcpFVoJTlVmfdIRVM0laHjtXDhziTR/6jqjrehS+TWK/okfeVBOnX/v9MiTjw=='
+    # 解密示例
+    decrypted = cipher.decrypt(res)
+    print(f"Decrypted: {decrypted}")

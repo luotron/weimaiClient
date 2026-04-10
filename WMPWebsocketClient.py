@@ -140,6 +140,7 @@ class WMPWebSocketClient:
                 pretty_group_list = [{
                     "groupid": g.get("1"),
                     "groupname": g.get("3"),
+                    "count": g.get("9")
                 } for g in group_list]
                 self.on_group_message(pretty_group_list)
         

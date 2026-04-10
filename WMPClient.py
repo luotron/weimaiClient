@@ -38,7 +38,7 @@ class WMPClient:
             print(f"HTTP 请求失败: {e}")
             return None
     
-    def query_group_increment(self, group_id, size=5):
+    def query_group_increment(self, group_id, endid=0, size=500):
         """
         查询群增量信息
         :param group_id: 群组 ID
@@ -46,7 +46,10 @@ class WMPClient:
         """
         url = 'https://weimai.edujia.com/wmim/h5/group/encrypt/member/query/increment.do'
         # 1. 构建原始数据
-        data_obj = {"pageSize": size, "groupid":str(group_id), "endid":0}
+        if endid == 0:
+            data_obj = {"pageSize": size, "groupid":str(group_id), "endid": endid}
+        else:
+            data_obj = {"updateTime": "{'id':" + str(endid) + ",'updateTime':''}", "pageSize": size, "groupid":str(group_id), "endid": endid}
         # 2. AES 加密
         cipher = WMPCipher(words=self.api_key)
         encrypted_str = cipher.encrypt(data_obj)
@@ -140,7 +143,7 @@ class WMPClient:
     def on_group_message(self, group_list):
         for group in group_list:
             group_id = group['groupid']
-            print(f"\n群信息: {group['groupname']} (ID: {group_id})")
+            print(f"\n群信息: {group['groupname']} (ID: {group_id}), 成员数: {group['count']}")
         self.wsClient.disconnect()  # 获取到群列表后断开 WebSocket 连接
         
     def generate_terminal_qr(self, text):
