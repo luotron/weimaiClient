@@ -132,7 +132,7 @@ class WMPClient:
         self.imToken = imToken
         self.token = token
         self.userid = userid
-        self.api_key = self.transform_to_key(api_key)
+        self.api_key = self.get_real_key(api_key)
         self.headers['token'] = token
         self.headers['userid'] = str(userid)
         client.disconnect()  # 收到消息后断开 MQTT 连接
@@ -173,18 +173,18 @@ class WMPClient:
             key_bytes += (word & 0xFFFFFFFF).to_bytes(4, byteorder='big')
         return key_bytes
     
-    def transform_to_key(self, hex_str):
-        target_hex = (
-            hex_str[1] + hex_str[3] +  # 00
-            hex_str[1] + hex_str[4] +  # 02
-            hex_str[1] + hex_str[6] +  # 06
-            hex_str[1] + hex_str[9] +  # 0a
-            hex_str[1] + hex_str[12] + # 08
-            hex_str[1] + hex_str[14] + # 03
-            hex_str[1] + hex_str[16] + # 0e
-            hex_str[1] + hex_str[19]   # 0e
-        )
-        return bytes.fromhex(target_hex).hex().encode('utf-8')
+    def get_real_key(self, hex_str):
+        # JavaScript 中的排除索引: 3, 8, 10, 17
+        exclude_indices = {3, 8, 10, 17}
+        
+        # 过滤掉这些索引位置的字符
+        filtered_chars = [char for i, char in enumerate(hex_str) if i not in exclude_indices]
+        
+        # 拼接成字符串
+        filtered_hex = "".join(filtered_chars)
+        
+        # 转换为 bytes 密钥
+        return bytes.fromhex(filtered_hex).hex().encode('utf-8')
 
 if __name__ == "__main__":
     client = WMPClient()
