@@ -4,28 +4,14 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 
 class WMPCipher:
-    def __init__(self, words=None):
+    def __init__(self, key=None):
         """
         初始化加解密类
-        :param words: 列表格式的 CryptoJS WordArray (如 [808464434, ...])
+        :param key: 密钥（bytes）
         """
-        if words is None:
-            # API Key (bytes): b'0002060a08030e0e'
-            words = [808464434, 808857697, 808988723, 811937893]
-            # Login Key (bytes): b'0a02040602050504'
-            # words = [811675698, 808726582, 808595509, 808792116]
-        
-        self.key = self._convert_words_to_bytes(words)
+        self.key = key
         self.mode = AES.MODE_ECB
         self.block_size = AES.block_size
-
-    def _convert_words_to_bytes(self, words):
-        """内部方法：将 WordArray 转换为字节流"""
-        key_bytes = b''
-        for word in words:
-            # 确保按大端序转换为 4 字节
-            key_bytes += (word & 0xFFFFFFFF).to_bytes(4, byteorder='big')
-        return key_bytes
 
     def encrypt(self, data):
         """

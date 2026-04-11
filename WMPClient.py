@@ -8,8 +8,8 @@ import qrcode
 
 class WMPClient:
     def __init__(self, token = None, userid=None, imToken=None):
-        self.api_key = [808464434, 808857697, 808988723, 811937893]
-        self.login_api_key = [811675698, 808726582, 808595509, 808792116]
+        self.api_key = self._convert_words_to_bytes([808464434, 808857697, 808988723, 811937893])
+        self.login_api_key = self._convert_words_to_bytes([811675698, 808726582, 808595509, 808792116])
         # 初始化固定的 Headers
         self.headers = {
             'accept': '*/*',
@@ -51,7 +51,7 @@ class WMPClient:
         else:
             data_obj = {"updateTime": "{'id':" + str(endid) + ",'updateTime':''}", "pageSize": size, "groupid":str(group_id), "endid": endid}
         # 2. AES 加密
-        cipher = WMPCipher(words=self.api_key)
+        cipher = WMPCipher(key=self.api_key)
         encrypted_str = cipher.encrypt(data_obj)
         # 3. 构造请求体 (application/x-www-form-urlencoded)
         payload = {'encryptData': encrypted_str}
@@ -74,7 +74,7 @@ class WMPClient:
         data_obj = {"groupid": str(group_id)}
         
         # 2. AES 加密
-        cipher = WMPCipher(words=self.api_key)
+        cipher = WMPCipher(key=self.api_key)
         encrypted_str = cipher.encrypt(data_obj)
         
         # 3. 构造请求体 (application/x-www-form-urlencoded)
@@ -95,7 +95,7 @@ class WMPClient:
         result = self.http_post(url=url)
         if result is not None:
             try:
-                cipher = WMPCipher(words=self.login_api_key)
+                cipher = WMPCipher(key=self.login_api_key)
                 decrypted_data = cipher.decrypt(result['data'])
                 return decrypted_data
             except Exception as e:
@@ -127,10 +127,12 @@ class WMPClient:
         imToken = data.get("imToken")
         token = data.get("token")
         userid = data.get("userid")
-        print(f"登录成功🔑 imToken: {imToken}, token: {token}, userid: {userid}")
+        api_key = data.get("encryptKey")
+        print(f"登录成功🔑 imToken: {imToken}, token: {token}, userid: {userid}, key: {api_key}")
         self.imToken = imToken
         self.token = token
         self.userid = userid
+        self.api_key = self.transform_to_key(api_key)
         self.headers['token'] = token
         self.headers['userid'] = str(userid)
         client.disconnect()  # 收到消息后断开 MQTT 连接
@@ -162,6 +164,27 @@ class WMPClient:
         # 3. 在终端输出二维码
         # invert=True 通常在深色背景的终端下显示更正常
         qr.print_ascii(invert=True)
+    
+    def _convert_words_to_bytes(self, words):
+        """内部方法：将 WordArray 转换为字节流"""
+        key_bytes = b''
+        for word in words:
+            # 确保按大端序转换为 4 字节
+            key_bytes += (word & 0xFFFFFFFF).to_bytes(4, byteorder='big')
+        return key_bytes
+    
+    def transform_to_key(self, hex_str):
+        target_hex = (
+            hex_str[1] + hex_str[3] +  # 00
+            hex_str[1] + hex_str[4] +  # 02
+            hex_str[1] + hex_str[6] +  # 06
+            hex_str[1] + hex_str[9] +  # 0a
+            hex_str[1] + hex_str[12] + # 08
+            hex_str[1] + hex_str[14] + # 03
+            hex_str[1] + hex_str[16] + # 0e
+            hex_str[1] + hex_str[19]   # 0e
+        )
+        return bytes.fromhex(target_hex).hex().encode('utf-8')
 
 if __name__ == "__main__":
     client = WMPClient()
